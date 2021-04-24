@@ -933,10 +933,16 @@ uint16_t NimBLEClient::getMTU() {
 
                     if ((*characteristic)->m_notifyCallback != nullptr) {
                         NIMBLE_LOGD(LOG_TAG, "Invoking callback for notification on characteristic %s",
-                                    (*characteristic)->toString().c_str());
-                        (*characteristic)->m_notifyCallback(*characteristic, event->notify_rx.om->om_data,
-                                                            event->notify_rx.om->om_len,
-                                                            !event->notify_rx.indication);
+                            (*characteristic)->toString().c_str()
+                        );
+
+                        (*characteristic)->m_notifyCallback(
+                            *characteristic, 
+                            event->notify_rx.om->om_data,
+                            event->notify_rx.om->om_len,
+                            !event->notify_rx.indication,
+                            (*characteristic)->m_notifyCallback_arg
+                        );
                     }
                     break;
                 }
