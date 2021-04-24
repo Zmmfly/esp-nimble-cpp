@@ -31,7 +31,7 @@ class NimBLERemoteDescriptor;
 
 
 typedef std::function<void (NimBLERemoteCharacteristic* pBLERemoteCharacteristic,
-                                uint8_t* pData, size_t length, bool isNotify)> notify_callback;
+                                uint8_t* pData, size_t length, bool isNotify, void *arg)> notify_callback;
 
 typedef struct {
     const NimBLEUUID *uuid;
@@ -105,8 +105,8 @@ public:
     }
 
     bool                                           subscribe(bool notifications = true,
-                                                             notify_callback notifyCallback = nullptr,
-                                                             bool response = false);
+                                                             notify_callback notifyCallback = nullptr, bool response = false,
+                                                             void *arg = nullptr);
     bool                                           unsubscribe(bool response = false);
     bool                                           registerForNotify(notify_callback notifyCallback,
                                                                      bool notifications = true,
@@ -139,7 +139,8 @@ private:
     friend class      NimBLERemoteDescriptor;
 
     // Private member functions
-    bool              setNotify(uint16_t val, notify_callback notifyCallback = nullptr, bool response = true);
+    // bool              setNotify(uint16_t val, notify_callback notifyCallback = nullptr, bool response = true);
+    bool              setNotify(uint16_t val, notify_callback notifyCallback = nullptr, bool response = true, void *arg = nullptr);
     bool              retrieveDescriptors(const NimBLEUUID *uuid_filter = nullptr);
     static int        onReadCB(uint16_t conn_handle, const struct ble_gatt_error *error,
                                struct ble_gatt_attr *attr, void *arg);
@@ -157,6 +158,7 @@ private:
     NimBLERemoteService*    m_pRemoteService;
     std::string             m_value;
     notify_callback         m_notifyCallback;
+    void*                   m_notifyCallback_arg;
     time_t                  m_timestamp;
     portMUX_TYPE            m_valMux;
 

@@ -58,6 +58,7 @@ static const char* LOG_TAG = "NimBLERemoteCharacteristic";
     m_charProp           = chr->properties;
     m_pRemoteService     = pRemoteService;
     m_notifyCallback     = nullptr;
+    m_notifyCallback_arg = nullptr;
     m_timestamp          = 0;
     m_valMux             = portMUX_INITIALIZER_UNLOCKED;
 
@@ -528,10 +529,37 @@ int NimBLERemoteCharacteristic::onReadCB(uint16_t conn_handle,
  * If NULL is provided then no callback is performed.
  * @return false if writing to the descriptor failed.
  */
-bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyCallback, bool response) {
+// bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyCallback, bool response) {
+//     NIMBLE_LOGD(LOG_TAG, ">> setNotify(): %s, %02x", toString().c_str(), val);
+
+//     m_notifyCallback = notifyCallback;
+
+//     NimBLERemoteDescriptor* desc = getDescriptor(NimBLEUUID((uint16_t)0x2902));
+//     if(desc == nullptr) {
+//         NIMBLE_LOGW(LOG_TAG, "<< setNotify(): Callback set, CCCD not found");
+//         return true;
+//     }
+
+//     NIMBLE_LOGD(LOG_TAG, "<< setNotify()");
+
+//     return desc->writeValue((uint8_t *)&val, 2, response);
+// } // setNotify
+
+/**
+ * @brief Subscribe or unsubscribe for notifications or indications.
+ * @param [in] val 0x00 to unsubscribe, 0x01 for notifications, 0x02 for indications.
+ * @param [in] notifyCallback A callback to be invoked for a notification.
+ * @param [in] response If write response required set this to true.
+ * @param [in] arg if callback had arg, put in
+
+ * If NULL is provided then no callback is performed.
+ * @return false if writing to the descriptor failed.
+ */
+bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyCallback, bool response, void *arg) {
     NIMBLE_LOGD(LOG_TAG, ">> setNotify(): %s, %02x", toString().c_str(), val);
 
     m_notifyCallback = notifyCallback;
+    m_notifyCallback_arg = arg;
 
     NimBLERemoteDescriptor* desc = getDescriptor(NimBLEUUID((uint16_t)0x2902));
     if(desc == nullptr) {
@@ -553,11 +581,11 @@ bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyC
  * If NULL is provided then no callback is performed.
  * @return false if writing to the descriptor failed.
  */
-bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback notifyCallback, bool response) {
+bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback notifyCallback, bool response, void *arg) {
     if(notifications) {
-        return setNotify(0x01, notifyCallback, response);
+        return setNotify(0x01, notifyCallback, response, arg);
     } else {
-        return setNotify(0x02, notifyCallback, response);
+        return setNotify(0x02, notifyCallback, response, arg);
     }
 } // subscribe
 
@@ -568,7 +596,7 @@ bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback n
  * @return false if writing to the descriptor failed.
  */
 bool NimBLERemoteCharacteristic::unsubscribe(bool response) {
-    return setNotify(0x00, nullptr, response);
+    return setNotify(0x00, nullptr, response, nullptr);
 } // unsubscribe
 
 
