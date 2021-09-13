@@ -11,11 +11,8 @@
  *      Author: kolban
  */
 
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
-
 #include "nimconfig.h"
-#if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
 #include "NimBLEClient.h"
 #include "NimBLEDevice.h"
@@ -24,8 +21,11 @@
 #include <string>
 #include <unordered_set>
 
+#if defined(CONFIG_NIMBLE_CPP_IDF)
 #include "nimble/nimble_port.h"
-
+#else
+#include "nimble/porting/nimble/include/nimble/nimble_port.h"
+#endif
 
 static const char* LOG_TAG = "NimBLEClient";
 static NimBLEClientCallbacks defaultCallbacks;
@@ -434,6 +434,24 @@ void NimBLEClient::updateConnParams(uint16_t minInterval, uint16_t maxInterval,
                     rc, NimBLEUtils::returnCodeToString(rc));
     }
 } // updateConnParams
+
+
+/**
+ * @brief Request an update of the data packet length.
+ * * Can only be used after a connection has been established.
+ * @details Sends a data length update request to the server the client is connected to.
+ * The Data Length Extension (DLE) allows to increase the Data Channel Payload from 27 bytes to up to 251 bytes.
+ * The server needs to support the Bluetooth 4.2 specifications, to be capable of DLE.
+ * @param [in] tx_octets The preferred number of payload octets to use (Range 0x001B-0x00FB).
+ */
+void NimBLEClient::setDataLen(uint16_t tx_octets) {
+    uint16_t tx_time = (tx_octets + 14) * 8;
+
+    int rc = ble_gap_set_data_len(m_conn_id, tx_octets, tx_time);
+    if(rc != 0) {
+        NIMBLE_LOGE(LOG_TAG, "Set data length error: %d, %s", rc, NimBLEUtils::returnCodeToString(rc));
+    }
+} // setDataLen
 
 
 /**
@@ -1176,5 +1194,4 @@ bool NimBLEClientCallbacks::onConfirmPIN(uint32_t pin){
     return true;
 }
 
-#endif // #if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-#endif // CONFIG_BT_ENABLED
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

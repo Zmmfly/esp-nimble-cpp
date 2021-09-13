@@ -12,19 +12,20 @@
  *      Author: kolban
  */
 
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
-
 #include "nimconfig.h"
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
 
 #include "NimBLEServer.h"
 #include "NimBLEDevice.h"
 #include "NimBLELog.h"
 
+#if defined(CONFIG_NIMBLE_CPP_IDF)
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
-
+#else
+#include "nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h"
+#include "nimble/nimble/host/services/gatt/include/services/gatt/ble_svc_gatt.h"
+#endif
 
 static const char* LOG_TAG = "NimBLEServer";
 static NimBLEServerCallbacks defaultCallbacks;
@@ -734,7 +735,7 @@ void NimBLEServer::startAdvertising() {
  */
 void NimBLEServer::stopAdvertising() {
     NimBLEDevice::stopAdvertising();
-} // startAdvertising
+} // stopAdvertising
 
 
 /**
@@ -772,7 +773,26 @@ void NimBLEServer::updateConnParams(uint16_t conn_handle,
     if(rc != 0) {
         NIMBLE_LOGE(LOG_TAG, "Update params error: %d, %s", rc, NimBLEUtils::returnCodeToString(rc));
     }
-}// updateConnParams
+} // updateConnParams
+
+
+/**
+ * @brief Request an update of the data packet length.
+ * * Can only be used after a connection has been established.
+ * @details Sends a data length update request to the peer.
+ * The Data Length Extension (DLE) allows to increase the Data Channel Payload from 27 bytes to up to 251 bytes.
+ * The peer needs to support the Bluetooth 4.2 specifications, to be capable of DLE.
+ * @param [in] conn_handle The connection handle of the peer to send the request to.
+ * @param [in] tx_octets The preferred number of payload octets to use (Range 0x001B-0x00FB).
+ */
+void NimBLEServer::setDataLen(uint16_t conn_handle, uint16_t tx_octets) {
+    uint16_t tx_time = (tx_octets + 14) * 8;
+
+    int rc = ble_gap_set_data_len(conn_handle, tx_octets, tx_time);
+    if(rc != 0) {
+        NIMBLE_LOGE(LOG_TAG, "Set data length error: %d, %s", rc, NimBLEUtils::returnCodeToString(rc));
+    }
+} // setDataLen
 
 
 bool NimBLEServer::setIndicateWait(uint16_t conn_handle) {
@@ -842,6 +862,4 @@ bool NimBLEServerCallbacks::onConfirmPIN(uint32_t pin){
     return true;
 }
 
-
-#endif // #if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-#endif // CONFIG_BT_ENABLED
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_PERIPHERAL */
